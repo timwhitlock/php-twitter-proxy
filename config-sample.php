@@ -29,3 +29,12 @@ define('TW_BEARER_TOK', '');
 
 
 
+// Lock screen_name and user_id parameters in all API calls to autheticated user
+// This prevents other people using your endpoints for their own Twitter feeds
+define('TW_LOCK_USER_ID',   '');
+define('TW_LOCK_USER_NAME', '');
+
+
+
+// response format - currently only JSON supported
+define('TW_CONTENT_TYPE', 'application/json; charset=utf-8' );
