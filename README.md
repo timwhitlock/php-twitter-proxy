@@ -1,4 +1,3 @@
-tw-proxy
-========
+# Twitter API Proxy 
 
-Twitter API 1.1 Proxy used by Flamingo
+This proxy is used by [Flamingo](http://twproxy.eu) and currently in development.
