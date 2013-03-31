@@ -4,9 +4,9 @@
  * https://dev.twitter.com/docs/api/1.1/get/statuses/user_timeline
  */
  
-require '../../config.php';
-require '../../lib/twitter-client.php';
 require '../../lib/twitter-proxy.php';
+require '../../lib/twitter-client.php';
+require '../../config.php';
 
 // prevent others using your proxy to pull their own tweets
 proxy_user_restrict( $_GET );
