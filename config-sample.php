@@ -40,7 +40,7 @@ define('TW_LOCK_USER_NAME', '');
 define('TW_CONTENT_TYPE', 'application/json; charset=utf-8' );
 
 
-// caching engine, defaults to APC
+// caching engine - currently only APC supported
 define('TW_CACHE_ENGINE', 'apc' );
 
 
