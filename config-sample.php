@@ -38,3 +38,16 @@ define('TW_LOCK_USER_NAME', '');
 
 // response format - currently only JSON supported
 define('TW_CONTENT_TYPE', 'application/json; charset=utf-8' );
+
+
+// caching engine, defaults to APC
+define('TW_CACHE_ENGINE', 'apc' );
+
+
+// cache key namespace
+define('TW_CACHE_PREFIX', 'twproxy_' );
+
+
+// Comma separated list of supported HTTP methods.
+// It's recommended to remove POST support.
+define('TW_ALLOW_METHODS', 'GET,POST' );
