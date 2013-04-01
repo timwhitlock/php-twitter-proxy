@@ -51,3 +51,10 @@ define('TW_CACHE_PREFIX', 'twproxy_' );
 // Comma separated list of supported HTTP methods.
 // It's recommended to remove POST support.
 define('TW_ALLOW_METHODS', 'GET,POST' );
+
+
+// RegExp to limit permitted HTTP Referrers
+// This is simply designed to prevent others using your proxy from JavaScript. The referrer is easily forged via other means.
+define('TW_MATCH_REFERRER', '!^https?://(?:localhost|mydomain\.com)/!' );
+
+
