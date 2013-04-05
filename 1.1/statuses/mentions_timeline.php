@@ -4,8 +4,7 @@
  * https://dev.twitter.com/docs/api/1.1/get/statuses/mentions_timeline
  */
  
-require '../../lib/twitter-proxy.php';
-require '../../lib/twitter-client.php';
+require '../../twitter-proxy.php';
 require '../../config.php';
 
-proxy_user_request( 'statuses/mentions_timeline' );
+Proxy::relay( 'statuses/mentions_timeline' );
