@@ -24,35 +24,23 @@ Proxy::match_referrer('!^https?://(?:localhost|mydomain\.com)/!');
 Proxy::match_remote_addr('/^(127/.0/.0/.1|192/.168/.0/.\d+)$/');
 
 
-
-
-/**
- * Global security checks are passed, configure API client and return control to the end point.
- * Obtaining these credentials is decoupled from the proxy library.
- * You could pull them from a database, or send the user through an OAuth flow, or hard code them.
- */
-
-
 // Twitter application key and secret
 // See: https://dev.twitter.com/apps 
-define('TW_CONSUMER_KEY', '');
-define('TW_CONSUMER_SEC', '');
+Proxy::init_client( 'Your application consumer token', 'Your consumer token secret' );
 
 
-
-// Authenticated user access token, obtained from your own user flow
+// Authenticated user access token.
 // See: https://dev.twitter.com/docs/auth/obtaining-access-tokens
-define('TW_ACCESS_KEY', '');
-define('TW_ACCESS_SEC', '');
+// Obtaining an access token is beyond the scope of this library.
+// You could pull them from a database, or send the user through an OAuth flow, or just hard code them.
+Proxy::auth_client( 'Your authenticated access token', 'Your access token secret' );
 
 
-
-// Lock screen_name and user_id parameters in all API calls to autheticated user
-// This prevents other people using your endpoints for their own Twitter feeds
-define('TW_LOCK_USER_ID',   '');
-define('TW_LOCK_USER_NAME', '');
+// Lock screen_name and user_id parameters in some API calls.
+// This prevents other people using some endpoints for their own Twitter feeds
+Proxy::lock_users( array( 'your screen_name' => 'your user_id' ) );
 
 
 // caching engine - currently only APC supported and is enabled by default
+Proxy::enable_cache( 'apc', 'your_prefix_' );
 // Proxy::disable_cache();
-// Proxy::enable_cache( 'apc', 'twproxy_', 60 );

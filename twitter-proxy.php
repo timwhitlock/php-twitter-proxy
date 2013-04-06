@@ -1,17 +1,40 @@
 <?php
 /**
- *
+ * php-twitter-proxy
+ * 
+ * http://twproxy.eu
+ * https://github.com/timwhitlock/php-twitter-proxy
+ * @author Tim Whitlock <@timwhitlock>
+ */
+
+  
+require __DIR__.'/lib/twitter-client.php';
+ 
+  
+ 
+/**
+ * Top-level Proxy class. All methods and properties are static
  */
 abstract class Proxy {
 
-
+    /* content type, currently JSON only */
     const TYPE_JSON = 'application/json; charset=utf-8';
 
     private static $type;
 
+
+    /* caching configurations */
     private static $cache_engine = 'apc';
     private static $cache_prefix = 'twproxy_';
     private static $cache_minttl = 60;
+    
+    /* restricted users */
+    private static $user_lock = array();
+    
+    /**
+     * @var TwitterApiClient
+     */
+    private static $client;
 
 
     /**
@@ -20,19 +43,21 @@ abstract class Proxy {
      * @param int Expiry in seconds
      * @return void
      */
-    public function relay( $path, $ttl = 60 ){
+    public static function relay( $path, $ttl = 60 ){
         try {
             
             // Twitter API params supported in GET and POST only
             if( 'POST' === $_SERVER['REQUEST_METHOD'] ){
+                $method = 'POST';
                 $args  = $_POST;
                 $cache = false;
                 $ttl   = 0;
             }
             else {
+                $method = 'GET';
                 $args  = $_GET;
                 $cache = self::$cache_engine;
-                $ttl   = $cache ? max( $ttl, $this->cache_minttl ) : 0;
+                $ttl   = $cache ? max( $ttl, self::$cache_minttl ) : 0;
             }
             
             // Twitter doesn't complain about unecessary parameters, but removing junk and "cache-busters" will improve caching
@@ -46,7 +71,7 @@ abstract class Proxy {
             // @todo use a faster method than md5 for key hash?
             if( $cache ){
                 ksort( $args );
-                $key  = $this->cache_prefix.'_'.md5( serialize($args) );
+                $key  = self::$cache_prefix.'_'.md5( serialize($args) );
                 $data = apc_fetch($key) or $data = null;
             }
 
@@ -60,18 +85,13 @@ abstract class Proxy {
             }
             else {
                 header('X-Cache: Proxy MISS' );
-                // Load php-twitter-api client // see git@github.com:timwhitlock/php-twitter-api.git
-                if( ! class_exists('TwitterApiClient') ){
-                    include __DIR__.'/lib/php-client.php';
-                }
-                // Authenticate Twitter client from creds in config.php
-                $Client = new TwitterApiClient;
-                $Client->set_oauth( TW_CONSUMER_KEY, TW_CONSUMER_SEC, TW_ACCESS_KEY, TW_ACCESS_SEC );
-                $data = $Client->raw( $path, $args, $method );
+
+                // Request via pre-configured Twitter client
+                $data = self::$client->raw( $path, $args, $method );
 
                 // extend TTL if rate limit has been reached for this request
                 if( $ttl ){
-                    $meta = $Client->last_rate_limit_data();
+                    $meta = self::$client->last_rate_limit_data();
                     if( $meta['limit'] && ! $meta['remaining'] ){
                         $ttl = max( $ttl, $meta['reset'] - time() );
                     }
@@ -103,7 +123,7 @@ abstract class Proxy {
      * Respond with proxied data and exit
      * @internal
      */
-    private function respond( $body, $type, $status = 200, $ttl = 0 ){
+    private static function respond( $body, $type, $status = 200, $ttl = 0 ){
         
         // currently only supporting json
         // @todo support XML formats
@@ -147,7 +167,7 @@ abstract class Proxy {
      * Fatal exit for proxy in similar format to Twitter API
      * @internal
      */
-    public function fatal( $status, $message = '' ){
+    public static function fatal( $status, $message = '' ){
         if( ! $message ){
             $message = _twitter_api_http_status_text( $status );
         }
@@ -163,15 +183,25 @@ abstract class Proxy {
 
 
     /**
-     * Check user_id and screen_name params for security purposes
-     * @param array bag containing request params
+     * Check a screen_name params for security purposes
+     * @param string 
      */
-    public function check_foreign_user( array $args ){
-        if( TW_LOCK_USER_NAME && isset($args['screen_name']) && strcasecmp(TW_LOCK_USER_NAME, $args['screen_name']) ){
-            self::fatal( 403, 'Proxy locked to screen_name '.TW_LOCK_USER_NAME );
+    public static function match_screen_name( $screen_name ){
+        if( self::$user_lock && ! isset(self::$user_lock[strtolower($screen_name)]) ){
+            self::fatal( 403, 'Proxy disallows user @'.$screen_name );
         }
-        if( TW_LOCK_USER_ID && isset($args['user_id']) && TW_LOCK_USER_ID !== $args['user_id'] ){
-            self::fatal( 403, 'Proxy locked to user_id '.TW_LOCK_USER_ID );
+        return true;
+    }
+
+
+
+    /**
+     * Check a user_id params for security purposes
+     * @param string 
+     */
+    public static function match_user_id( $user_id ){
+        if( self::$user_lock && ! in_array($user_id, self::$user_lock,true) ){
+            self::fatal( 403, 'Proxy disallows user #'.$user_id );
         }
         return true;
     }
@@ -182,12 +212,12 @@ abstract class Proxy {
      * Check referrer header for JavaScript applications
      * @param string regexp pattern to match against HTTP Referer header
      */
-    public static function match_referrer( $$pattern ){
+    public static function match_referrer( $pattern ){
         if( empty($_SERVER['HTTP_REFERER']) ){
             self::fatal( 400 , 'Empty referrer' );
         }
         if( ! preg_match( $pattern, $_SERVER['HTTP_REFERER'] ) ){
-            self::fatal( 403, 'Illegal referrer' );
+            self::fatal( 403, 'Illegal referrer');
         }
         return true;
     }
@@ -198,12 +228,12 @@ abstract class Proxy {
      * Check remote IP address for whitelisting.
      */
     public static function match_remote_addr( $pattern ){
-        $ips[] = $_SERVER['HTTP_REMOTE_ADDR'];
+        $ips[] = $_SERVER['REMOTE_ADDR'];
         //isset($_SERVER['HTTP_CLIENT_IP']) and $ips[] = $_SERVER['HTTP_CLIENT_IP'];
         //isset($_SERVER['HTTP_X_FORWARDED_FOR']) and $ips[] = $_SERVER['HTTP_X_FORWARDED_FOR'];
         foreach( $ips as $ip ){
             if( ! preg_match( $pattern, $ip ) ){
-                self::fatal( 403, 'Illegal IP' );
+                self::fatal( 403, 'Illegal IP address: '.$ip );
             }
         }
         return true;
@@ -214,6 +244,7 @@ abstract class Proxy {
     /**
      * Check HTTP request method
      * @param comma-separated list of permitted HTTP methods
+     * @return string method set
      */
     public static function match_methods( $allowed = 'GET' ){
         $method = $_SERVER['REQUEST_METHOD'];
@@ -228,6 +259,9 @@ abstract class Proxy {
     /**
      * Set a cache engine and minimum TTL of request cachees
      * @param string Caching engine, currently only APC
+     * @param string key prefix for cache entries
+     * @param int optional minimum TTL for all requests
+     * @return void
      */
     public static function enable_cache( $engine = 'apc', $prefix = 'twproxy_', $minTTL = 60 ){
         self::$cache_engine = $engine;
@@ -239,11 +273,52 @@ abstract class Proxy {
 
     /**
      * Disable caching of requests
+     * @return void
      */
     public static function disable_cache(){
         self::$cache_engine = '';
         self::$cache_minttl = 0;
     }
+    
+    
+    
+    /**
+     * configure application consumer
+     * @param string key
+     * @param string secret
+     * @return void
+     */
+    public static function init_client( $consumer_key, $consumer_sec ){
+        self::$client = new TwitterApiClient;
+        self::$client->set_oauth_consumer( new TwitterOAuthToken($consumer_key, $consumer_sec) );
+    }
+    
+    
+    
+    /**
+     * configure application access
+     * @param string key
+     * @param string secret
+     * @return void
+     */
+    public static function auth_client( $access_key, $access_sec ){
+        self::$client or self::fatal( 500, 'No API client configured' );
+        self::$client->set_oauth_access( new TwitterOAuthToken( $access_key, $access_sec ) );
+    }
+    
+    
+
+    /**
+     * Lock request to certain users. Only checked for certain API calls.
+     * @param array locked users in format { screen_name : user_id, .. }
+     * @return void
+     */
+    public static function lock_users( array $allowed ){
+        foreach( $allowed as $screen_name => $user_id ){
+            self::$user_lock[ strtolower($screen_name) ] = (string) $user_id;
+        }
+    }
+    
 
 
 }
