@@ -7,11 +7,8 @@
  * @author Tim Whitlock <@timwhitlock>
  */
 
-  
-require __DIR__.'/lib/twitter-client.php';
  
-  
- 
+
 /**
  * Top-level Proxy class. All methods and properties are static
  */
@@ -71,7 +68,7 @@ abstract class Proxy {
             // @todo use a faster method than md5 for key hash?
             if( $cache ){
                 ksort( $args );
-                $key  = self::$cache_prefix.'_'.md5( serialize($args) );
+                $key  = self::$cache_prefix.'_'.md5( $path.serialize($args) );
                 $data = apc_fetch($key) or $data = null;
             }
 
@@ -323,5 +320,9 @@ abstract class Proxy {
 
 }
 
+
+
+require __DIR__.'/lib/twitter-client.php';
+require __DIR__.'/config.php';
 
 

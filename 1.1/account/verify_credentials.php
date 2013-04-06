@@ -5,6 +5,5 @@
  */
  
 require '../../twitter-proxy.php';
-require '../../config.php';
 
 Proxy::relay( 'account/verify_credentials' );

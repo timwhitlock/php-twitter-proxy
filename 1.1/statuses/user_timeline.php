@@ -5,7 +5,6 @@
  */
  
 require '../../twitter-proxy.php';
-require '../../config.php';
 
 // prevent others using your proxy to pull their own tweets
 isset($_GET['user_id']) and Proxy::match_user_id( $_GET['user_id'] );
