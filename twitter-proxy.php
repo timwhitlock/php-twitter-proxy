@@ -86,15 +86,14 @@ abstract class Proxy {
                 // Request via pre-configured Twitter client
                 $data = self::$client->raw( $path, $args, $method );
 
-                // extend TTL if rate limit has been reached for this request
                 if( $ttl ){
+                    // extend TTL if rate limit has been reached for this request
                     $meta = self::$client->last_rate_limit_data();
                     if( $meta['limit'] && ! $meta['remaining'] ){
                         $ttl = max( $ttl, $meta['reset'] - time() );
                     }
-
-                    // Cache response
-                    if( $cache ){
+                    // Cache response if successfull
+                    if( $cache && 200 === $data['status'] ){
                         $data['t'] = time();
                         apc_store( $key, $data, $ttl );
                     }
