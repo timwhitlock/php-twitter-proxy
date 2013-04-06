@@ -6,4 +6,6 @@
  
 require '../../twitter-proxy.php';
 
+// @todo deny trim_user so we know if user is protected
+
 Proxy::relay( 'statuses/show' );
