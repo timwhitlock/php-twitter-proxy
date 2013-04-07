@@ -319,6 +319,7 @@ abstract class Proxy {
      * configure application access
      * @param string key
      * @param string secret
+     * @param string optional alias for authed user, defaults to user_id found in key prefix
      * @return void
      */
     public static function auth_client( $access_key, $access_sec, $alias = '' ){

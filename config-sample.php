@@ -42,5 +42,5 @@ Proxy::lock_users( array( 'your screen_name' => 'your user_id' ) );
 
 
 // caching engine - currently only APC supported and is enabled by default
-Proxy::enable_cache( 'apc', 'your_prefix_' );
+Proxy::enable_cache( 'apc', 'your_prefix' );
 // Proxy::disable_cache();
