@@ -65,10 +65,10 @@ abstract class Proxy {
             unset( $args['callback'] );
                     
             // Fetch from cache if engine specified. Currently only APC supported
-            // @todo use a faster method than md5 for key hash?
+            // @todo establish a faster method for key hash?
             if( $cache ){
                 ksort( $args );
-                $key  = self::$cache_prefix.'_'.md5( $path.serialize($args) );
+                $key  = self::$cache_prefix.'_'.str_replace('/','_',$path).'_'.md5( serialize($args) );
                 $data = apc_fetch($key) or $data = null;
             }
 
