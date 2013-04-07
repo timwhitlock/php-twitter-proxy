@@ -75,15 +75,13 @@ abstract class Proxy {
             if( $cache ){
                 $key = self::$cache_prefix;
                 if( self::$cache_shared ){
-                    $key .= '_$'; // <- ensure no collision with twitter names
+                    $key .= '_$shared'; // <- ensure no collision with twitter names
                 }
                 else {
                     $key .= '_'.self::$alias;
                 }
-                // @todo establish a faster method for argument hash?
-                ksort( $args );
-                $key .= '_'.str_replace('/','_',$path).'_'.md5( serialize($args) );
-                $data = apc_fetch($key) or $data = null;
+                $key .= '_'.str_replace('/','_',$path).'_'.self::hash_args($args);
+                $data = self::cache_fetch($key) or $data = null;
             }
 
             if( isset($data) ){
@@ -109,7 +107,7 @@ abstract class Proxy {
                     // Cache response if successfull
                     if( $cache && 200 === $data['status'] ){
                         $data['t'] = time();
-                        apc_store( $key, $data, $ttl );
+                        self::cache_store( $key, $data, $ttl );
                     }
                 }
             }
@@ -341,6 +339,83 @@ abstract class Proxy {
         }
     }
     
+    
+    
+    /**
+     * Pre-check a user for protected status.
+     * This has a performance overhead, so only use for methods that can't establish private status on data
+     */    
+    public static function protected_user_pre_check(){
+        $args = array_intersect_key( $_REQUEST, array( 'user_id' => '', 'screen_name' => '' ) );
+        $user = self::get_user($args) or self::fatal( 404, 'User not found' );
+        if( empty($user['protected']) ){
+            return true;
+        }
+        // Twitter would return 401 "Not authorized", but we are *authenticated*, so I'm returning 403 
+        self::fatal( 403, 'Protected Twitter account' );
+    }   
+    
+    
+    
+    /**
+     * Internal user lookup
+     * @internal
+     */
+    private static function get_user( array $args ){
+        $args['skip_status'] = true;
+        if( self::$cache_engine ){
+            $key  = self::$cache_prefix.'_$internal_users_show_'.self::hash_args($args);
+            $user = self::cache_fetch($key) or $user = null;
+        }
+        if( ! isset($user) ){
+            try {
+                $user = self::$client->call( 'users/show', $args );
+            }
+            catch( TwitterApiException $Ex ){
+                self::fatal( $Ex->getStatus(), $Ex->getMessage() );
+            }
+            catch( Exception $Ex ){
+                self::fatal( 500, $Ex->getMessage() );
+            }
+            // cache user lookup for longer
+            if( self::$cache_engine ){
+                self::cache_store( $key, $user, 86400 );
+            }
+        }
+        return $user;
+    }
+    
+    
+    
+    /**
+     * Abstraction of cache fetch
+     * @internal
+     */
+    private static function cache_fetch( $key ){
+        return apc_fetch( $key );
+    }    
+    
+    
+    
+    /**
+     * Abstraction of cache set
+     * @internal
+     */
+    private static function cache_store( $key, $data, $ttl ){
+        return apc_store( $key, $data, $ttl );
+    }    
+
+
+
+    /**
+     * Abstraction of argument hash
+     * @todo establish better/faster method for this
+     */
+    private static function hash_args( array $args ){
+         ksort( $args );
+         return md5( serialize($args) );
+    }
+
 
 
 }

@@ -6,8 +6,10 @@
  
 require '../../twitter-proxy.php';
 
-// @todo prevent exposing of protected user accounts
-// Proxy::strip_private();
+if( empty($_GET['skip_status']) ){
+    // @todo swap for a post check and handle trim_user
+    Proxy::protected_user_pre_check();
+}
 
 Proxy::share_cache();
 

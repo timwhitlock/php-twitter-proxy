@@ -6,6 +6,8 @@
  
 require '../../twitter-proxy.php';
  
+Proxy::protected_user_pre_check();
+
 Proxy::share_cache();
 
 Proxy::relay( 'friends/list' );

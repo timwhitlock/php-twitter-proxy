@@ -6,8 +6,7 @@
  
 require '../../twitter-proxy.php';
 
-// @todo prevent exposing of protected user accounts
-// Proxy::strip_private();
+// @todo implement protected user post-check
 
 Proxy::share_cache();
 

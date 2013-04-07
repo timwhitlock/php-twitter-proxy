@@ -6,7 +6,7 @@
  
 require '../../twitter-proxy.php';
 
-// @todo deny trim_user so we know if user is protected
+// @todo implement protected user post-check
 
 Proxy::share_cache();
 
