@@ -6,7 +6,9 @@
  
 require '../../twitter-proxy.php';
 
-// @todo implement protected user post-check
+if( empty($_GET['skip_status']) ){
+    Proxy::protected_user_post_check();
+}
 
 Proxy::share_cache();
 
