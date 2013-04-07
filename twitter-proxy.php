@@ -32,6 +32,12 @@ abstract class Proxy {
      * @var TwitterApiClient
      */
     private static $client;
+    
+    /**
+     * user alias for private caching, etc..
+     * @var string
+     */    
+    private static $alias;     
 
 
     /**
@@ -68,7 +74,7 @@ abstract class Proxy {
             // @todo establish a faster method for key hash?
             if( $cache ){
                 ksort( $args );
-                $key  = self::$cache_prefix.'_'.str_replace('/','_',$path).'_'.md5( serialize($args) );
+                $key  = self::$cache_prefix.self::$alias.'_'.str_replace('/','_',$path).'_'.md5( serialize($args) );
                 $data = apc_fetch($key) or $data = null;
             }
 
@@ -297,9 +303,10 @@ abstract class Proxy {
      * @param string secret
      * @return void
      */
-    public static function auth_client( $access_key, $access_sec ){
+    public static function auth_client( $access_key, $access_sec, $alias = '' ){
         self::$client or self::fatal( 500, 'No API client configured' );
         self::$client->set_oauth_access( new TwitterOAuthToken( $access_key, $access_sec ) );
+        self::$alias = $alias or self::$alias = current( explode('-',$access_key,2) );
     }
     
     
