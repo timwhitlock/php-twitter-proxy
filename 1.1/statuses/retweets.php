@@ -6,7 +6,8 @@
  
 require '../../twitter-proxy.php';
 
-// @todo deny trim_user so we know if user is protected
+// @todo do retweets need protecting?
+//Proxy::protected_user_post_check();
 
 Proxy::share_cache();
 

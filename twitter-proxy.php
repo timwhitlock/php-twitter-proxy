@@ -39,7 +39,11 @@ abstract class Proxy {
      * @var string
      */    
     private static $alias;     
-
+    
+    /**
+     * post-request filters
+     */     
+    private static $filters = array();
 
     /**
      * Proxy a Twitter API call as authenticated user.
@@ -70,6 +74,12 @@ abstract class Proxy {
             
             // We want to ensure that the cache is hit for requests even when the JSONP callback is different
             unset( $args['callback'] );
+            
+            // never trim user records when we're running post filters
+            if( self::$filters && ! empty($args['trim_user']) ){
+                self::$filters[] = array( Proxy, 'filter_trim_user' );
+                unset($args['trim_user']);
+            }
                     
             // Fetch from cache if engine specified. Currently only APC supported
             if( $cache ){
@@ -78,7 +88,7 @@ abstract class Proxy {
                     $key .= '_$shared'; // <- ensure no collision with twitter names
                 }
                 else {
-                    $key .= '_'.self::$alias;
+                    $key .= '_@'.self::$alias;
                 }
                 $key .= '_'.str_replace('/','_',$path).'_'.self::hash_args($args);
                 $data = self::cache_fetch($key) or $data = null;
@@ -98,6 +108,15 @@ abstract class Proxy {
                 // Request via pre-configured Twitter client
                 $data = self::$client->raw( $path, $args, $method );
 
+                // run security filters on data - requires deserialization
+                if( self::$filters ){
+                    $struct = json_decode( $data['body'], true );
+                    foreach( self::$filters as $callee ){
+                        $struct = call_user_func( $callee, $struct );
+                    }
+                    $data['body'] = json_encode($struct);
+                }
+
                 if( $ttl ){
                     // extend TTL if rate limit has been reached for this request
                     $meta = self::$client->last_rate_limit_data();
@@ -111,9 +130,6 @@ abstract class Proxy {
                     }
                 }
             }
-
-            // @todo run security filters on data
-            // e.g. strip tweets belonging to protected users
 
             // success, respond to client.
             self::respond( $data['body'], $data['headers']['content-type'], $data['status'], $ttl );
@@ -354,6 +370,77 @@ abstract class Proxy {
         // Twitter would return 401 "Not authorized", but we are *authenticated*, so I'm returning 403 
         self::fatal( 403, 'Protected Twitter account' );
     }   
+    
+    
+    
+    /**
+     * Flag request for a post-check for protected user data
+     */
+    public static function protected_user_post_check(){
+        self::$filters[] = array( Proxy, 'filter_protected_users' );
+    }    
+    
+    
+    
+    /**
+     * Strip protected data from deserialized data
+     * @internal
+     */
+    private static function filter_protected_users( array $data, $depth = 0 ){
+        // data could be: 
+        // 1. a status with a user property
+        if( isset($data['text']) ){
+            if( isset($data['user']) && ! empty($data['user']['protected']) ){
+                if( ! $depth ){
+                    self::fatal( 403, 'Protected Twitter account' );
+                }
+                $data = array_intersect_key( $data, array('user'=>1,'id'=>1,'id_str'=>1) );
+                $data['proxy_removed'] = true;
+            }
+        }
+        // 2. a user with a status property
+        else if( isset($data['screen_name']) ){
+            if( ! empty($data['protected']) ){
+                // protected user must have status removed
+                // @todo any other sensitive properties?
+                $data['status'] = array( 'proxy_removed' => true );
+            }
+        }
+        // 3. a list of statuses, or users
+        else {
+            $depth++;
+            foreach( $data as $i => $struct ){
+                $data[$i] = self::filter_protected_users( $struct, $depth );
+            }
+        }
+        return $data;
+    }    
+    
+    
+    
+    /**
+     * Trim user if we forcefully un-trimmed earlier
+     */
+    private static function filter_trim_user( array $data, $depth = 0 ){
+        // data could be: 
+        // 1. a user object
+        if( isset($data['screen_name']) ){
+            // not actually supported by the Twitter API, but we may as well
+            $data = array_intersect_key( $data, array( 'id'=>1,'id_str'=>1) );
+        }
+        // 2. a status with a user object
+        else if( isset($data['user']) ){
+            $data['user'] = self::filter_trim_user( $data['user'], $depth+1 );
+        }
+        // 3. a list of statuses, or users
+        else {
+            $depth++;
+            foreach( $data as $i => $struct ){
+                $data[$i] = self::filter_trim_user( $struct, $depth );
+            }
+        }
+        return $data;
+    }    
     
     
     
