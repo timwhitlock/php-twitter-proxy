@@ -22,8 +22,9 @@ abstract class Proxy {
 
     /* caching configurations */
     private static $cache_engine = 'apc';
-    private static $cache_prefix = 'twproxy_';
+    private static $cache_prefix = 'twproxy';
     private static $cache_minttl = 60;
+    private static $cache_shared = false;
     
     /* restricted users */
     private static $user_lock = array();
@@ -71,10 +72,17 @@ abstract class Proxy {
             unset( $args['callback'] );
                     
             // Fetch from cache if engine specified. Currently only APC supported
-            // @todo establish a faster method for key hash?
             if( $cache ){
+                $key = self::$cache_prefix;
+                if( self::$cache_shared ){
+                    $key .= '_$'; // <- ensure no collision with twitter names
+                }
+                else {
+                    $key .= '_'.self::$alias;
+                }
+                // @todo establish a faster method for argument hash?
                 ksort( $args );
-                $key  = self::$cache_prefix.self::$alias.'_'.str_replace('/','_',$path).'_'.md5( serialize($args) );
+                $key .= '_'.str_replace('/','_',$path).'_'.md5( serialize($args) );
                 $data = apc_fetch($key) or $data = null;
             }
 
@@ -265,7 +273,7 @@ abstract class Proxy {
      * @param int optional minimum TTL for all requests
      * @return void
      */
-    public static function enable_cache( $engine = 'apc', $prefix = 'twproxy_', $minTTL = 60 ){
+    public static function enable_cache( $engine = 'apc', $prefix = 'twproxy', $minTTL = 60 ){
         self::$cache_engine = $engine;
         self::$cache_prefix = $prefix;
         self::$cache_minttl = $minTTL;
@@ -281,6 +289,16 @@ abstract class Proxy {
         self::$cache_engine = '';
         self::$cache_minttl = 0;
     }
+
+    
+    
+    /**
+     * Allow the cached response to be shared by all users.
+     * Caching is private to the authenticated user by default
+     */
+    public static function share_cache(){
+        self::$cache_shared = true;
+    }     
     
     
     

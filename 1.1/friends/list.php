@@ -6,4 +6,6 @@
  
 require '../../twitter-proxy.php';
  
+Proxy::share_cache();
+
 Proxy::relay( 'friends/list' );

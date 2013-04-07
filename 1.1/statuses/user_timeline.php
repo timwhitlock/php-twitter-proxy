@@ -7,7 +7,12 @@
 require '../../twitter-proxy.php';
 
 // prevent others using your proxy to pull their own tweets
-isset($_GET['user_id']) and Proxy::match_user_id( $_GET['user_id'] );
-isset($_GET['screen_name']) and Proxy::match_screen_name( $_GET['screen_name'] );
+$has_id = isset($_GET['user_id']) and Proxy::match_user_id( $_GET['user_id'] );
+$has_name = isset($_GET['screen_name']) and Proxy::match_screen_name( $_GET['screen_name'] );
+
+// only share cache if target user is specified
+if( $has_id || $has_name ){
+    Proxy::share_cache();
+}
 
 Proxy::relay( 'statuses/user_timeline' );
