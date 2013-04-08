@@ -107,9 +107,10 @@ abstract class Proxy {
 
                 // Request via pre-configured Twitter client
                 $data = self::$client->raw( $path, $args, $method );
+                $ok = 200 === $data['status'];
 
                 // run security filters on data - requires deserialization
-                if( self::$filters ){
+                if( $ok && self::$filters ){
                     $struct = json_decode( $data['body'], true );
                     foreach( self::$filters as $callee ){
                         $struct = call_user_func( $callee, $struct );
@@ -124,7 +125,7 @@ abstract class Proxy {
                         $ttl = max( $ttl, $meta['reset'] - time() );
                     }
                     // Cache response if successfull
-                    if( $cache && 200 === $data['status'] ){
+                    if( $cache && $ok ){
                         $data['t'] = time();
                         self::cache_store( $key, $data, $ttl );
                     }
