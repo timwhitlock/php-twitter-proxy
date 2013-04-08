@@ -19,9 +19,20 @@ Proxy::match_methods('GET,POST' );
 Proxy::match_referrer('!^https?://(?:localhost|mydomain\.com)/!');
 
 
+// Restrict permitted HTTP Origin headers.
+// Similar to above, but specifically for Ajax requests.
+Proxy::match_origin('!^https?://(?:localhost|mydomain\.com)!');
+
+
 // Restrict permitted remote IP addresses
 // This is pointless if using with JavaScript.
 Proxy::match_remote_addr('/^(127/.0/.0/.1|192/.168/.0/.\d+)$/');
+
+
+
+
+// Global security checks have passed.
+// The following configures the Twitter client for proxying request
 
 
 // Twitter application key and secret

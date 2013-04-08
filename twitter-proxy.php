@@ -1,10 +1,11 @@
 <?php
 /**
  * php-twitter-proxy
- * 
  * http://twproxy.eu
  * https://github.com/timwhitlock/php-twitter-proxy
- * @author Tim Whitlock <@timwhitlock>
+ * 
+ * @author Tim Whitlock, http://timwhitlock.info
+ * @license MIT
  */
 
  
