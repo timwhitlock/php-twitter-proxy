@@ -50,6 +50,12 @@ abstract class Proxy {
      */
     private static $origin;    
     
+    /**
+     * Restricted end point list.
+     * All allowed by default
+     * @param array
+     */    
+    private static $endpoints = array();    
 
     /**
      * Proxy a Twitter API call as authenticated user.
@@ -59,6 +65,16 @@ abstract class Proxy {
      */
     public static function relay( $path, $ttl = 60 ){
         try {
+            
+            // restrict endpoints
+            while( self::$endpoints ){
+                foreach( self::$endpoints as $starts ){
+                    if( 0 === strpos($path,$starts) ){
+                        break 2;
+                    }
+                }
+                self::fatal( 403, 'End point not permitted' );
+            }
             
             // Twitter API params supported in GET and POST only
             if( 'POST' === $_SERVER['REQUEST_METHOD'] ){
@@ -535,7 +551,14 @@ abstract class Proxy {
          ksort( $args );
          return md5( serialize($args) );
     }
-
+    
+    
+    /**
+     * 
+     */
+    public static function allow_endpoint( $path ){
+        self::$endpoints[] = $path;
+    }
 
 
 }
