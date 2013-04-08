@@ -44,6 +44,12 @@ abstract class Proxy {
      * post-request filters
      */     
     private static $filters = array();
+    
+    /**
+     * Allowed referrer/origin for CORS
+     */
+    private static $origin;    
+    
 
     /**
      * Proxy a Twitter API call as authenticated user.
@@ -179,6 +185,15 @@ abstract class Proxy {
             header('HTTP/1.1 '.$status.' '._twitter_api_http_status_text($status), true, $status );
         }
         
+        // CORS:
+        // note that current default is open. restrict with match_origin if this is not desirable.
+        if( self::$origin ){
+            header('Access-Control-Allow-Origin: '.self::$origin );
+        }
+        else {
+            header('Access-Control-Allow-Origin: *');
+        }
+        
         header('Content-Type: '.$type, true );
         header('Content-Length: '.strlen($body), true );
         echo $body;
@@ -244,6 +259,23 @@ abstract class Proxy {
         if( ! preg_match( $pattern, $_SERVER['HTTP_REFERER'] ) ){
             self::fatal( 403, 'Illegal referrer');
         }
+        return true;
+    }
+
+
+
+    /**
+     * Check Origin header for Ajax applications
+     * @param string regexp pattern to match against HTTP Origin header
+     */
+    public static function match_origin( $pattern ){
+        if( empty($_SERVER['HTTP_ORIGIN']) ){
+            self::fatal( 400 , 'Empty origin' );
+        }
+        if( ! preg_match( $pattern, $_SERVER['HTTP_ORIGIN'] ) ){
+            self::fatal( 403, 'Illegal origin');
+        }
+        self::$origin = $_SERVER['HTTP_ORIGIN'];
         return true;
     }
 
