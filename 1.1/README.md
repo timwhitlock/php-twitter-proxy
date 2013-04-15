@@ -10,7 +10,7 @@ In more complex cases you may want to perform server rewrites to request the end
 Exposing authenticated calls to the Twitter API via Ajax web services is potentially idiotic.
 Avoid exposing private data or providing privileged access to the Twitter API via your authenticated keys.
 
-This library has various features to protect against this, but ultimately the responsibility lies with you to ensure against security and privacy problems. 
+This library has various features to protect against security and privacy problems, but ultimately the responsibility lies with you to ensure against security and privacy problems. 
 
 
 Flamingo is a hosted service using this library that only exposes safe methods. 
