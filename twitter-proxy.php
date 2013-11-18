@@ -100,7 +100,7 @@ abstract class Proxy {
             
             // never trim user records when we're running post filters
             if( self::$filters && ! empty($args['trim_user']) ){
-                self::$filters[] = array( Proxy, 'filter_trim_user' );
+                self::$filters[] = array( 'Proxy', 'filter_trim_user' );
                 unset($args['trim_user']);
             }
                     
@@ -427,7 +427,7 @@ abstract class Proxy {
      * Flag request for a post-check for protected user data
      */
     public static function protected_user_post_check(){
-        self::$filters[] = array( Proxy, 'filter_protected_users' );
+        self::$filters[] = array( 'Proxy', 'filter_protected_users' );
     }    
     
     
