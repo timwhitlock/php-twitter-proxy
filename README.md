@@ -1,6 +1,8 @@
-# Twitter API Proxy 
+# NO LONGER MAINTAINED
 
-This is the proxy code used by [Flamingo](http://twproxy.eu).
+This was the proxy code used by [Flamingo](https://timwhitlock.info/blog/2013/04/killing-flamingo/).
+
+Don't use it.
 
 The `1.1` directory contains the endpoints exposed by the proxy. 
 Add and edit these as you need, being careful not to expose private data.
